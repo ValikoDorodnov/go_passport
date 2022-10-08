@@ -16,7 +16,7 @@ func (h *Handler) AuthByEmail(w http.ResponseWriter, r *http.Request) {
 		rest.ResponseErrors(w, err)
 	}
 
-	resp, err := h.userService.AuthByEmailProcess(ctx, &requestDto)
+	resp, err := h.userService.AuthByEmail(ctx, &requestDto)
 	if err != nil {
 		rest.ResponseErrors(w, err)
 	}

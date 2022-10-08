@@ -21,7 +21,7 @@ func NewUserService(repo *repository.UserRepository, hasher *hasher.Hasher) *Use
 	}
 }
 
-func (us *UserService) AuthByEmailProcess(ctx context.Context, requestDto *dto.RequestDto) (*entity.User, error) {
+func (us *UserService) AuthByEmail(ctx context.Context, requestDto *dto.RequestDto) (*entity.User, error) {
 	passwordHash := us.hasher.GetMD5Hash(requestDto.Pass)
 	return us.repo.FindUser(ctx, requestDto.Email, passwordHash)
 }
