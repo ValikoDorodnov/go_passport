@@ -17,16 +17,13 @@ func NewUserRepository(db *sqlx.DB) *UserRepository {
 }
 
 func (r UserRepository) FindUser(ctx context.Context, email, passwordHash string) (*entity.User, error) {
-	var commonId int
-	var roles string
+	var user entity.User
 
 	query := `SELECT common_id, roles FROM users WHERE email=$1 AND password_hash=$2`
-
-	err := r.db.QueryRowContext(ctx, query, email, passwordHash).Scan(&commonId, &roles)
+	err := r.db.GetContext(ctx, &user, query, email, passwordHash)
 	if err != nil {
 		return nil, err
 	}
 
-	user := entity.NewUser(commonId, roles)
-	return user, nil
+	return &user, nil
 }
