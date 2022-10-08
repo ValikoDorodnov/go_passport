@@ -2,6 +2,7 @@ package rest
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
 )
 
@@ -15,4 +16,8 @@ func ResponseErrors(w http.ResponseWriter, err error) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusBadRequest)
 	json.NewEncoder(w).Encode(ErrorResponse{Errors: []string{err.Error()}})
+}
+
+func ParseRequestBody(body io.ReadCloser, data interface{}) error {
+	return json.NewDecoder(body).Decode(&data)
 }
