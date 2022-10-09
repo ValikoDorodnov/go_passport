@@ -19,7 +19,7 @@ func NewHandler(userService *service.UserService) *Handler {
 
 func (h *Handler) GetRouter() *mux.Router {
 	r := mux.NewRouter()
-	r.HandleFunc("/auth-by-email", h.AuthByEmail).Methods(http.MethodPost)
+	r.HandleFunc("/login-by-email", h.LoginByEmail).Methods(http.MethodPost)
 
 	return r
 }
