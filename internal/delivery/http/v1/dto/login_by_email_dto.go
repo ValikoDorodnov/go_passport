@@ -1,5 +1,5 @@
 package dto
 
-type RequestDto struct {
+type LoginByEmailDto struct {
 	Email, Pass string
 }

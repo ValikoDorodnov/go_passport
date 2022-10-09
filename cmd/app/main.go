@@ -29,8 +29,9 @@ func main() {
 	}
 	defer dbConnection.Close()
 
+	jwt := service.NewJwtService(conf.Jwt)
 	userRepo := repository.NewUserRepository(dbConnection)
-	userService := service.NewUserService(userRepo, hash)
+	userService := service.NewUserService(userRepo, hash, jwt)
 
 	handler := v1.NewHandler(userService)
 	srv := http.NewRestServer(conf.Rest, handler.GetRouter())

@@ -7,17 +7,15 @@ import (
 	"github.com/ValikoDorodnov/go_passport/pkg/rest"
 )
 
-func (h *Handler) LoginByEmail(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	var requestDto dto.LoginByEmailDto
+func (h *Handler) LoginByRefresh(w http.ResponseWriter, r *http.Request) {
+	var requestDto dto.LoginByRefreshDto
 	err := rest.ParseRequestBody(r.Body, &requestDto)
 	if err != nil {
 		rest.ResponseErrors(w, err)
 		return
 	}
 
-	resp, err := h.userService.LoginByEmail(ctx, &requestDto)
+	resp, err := h.userService.LoginByRefresh(&requestDto)
 	if err != nil {
 		rest.ResponseErrors(w, err)
 		return
