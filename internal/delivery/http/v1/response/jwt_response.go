@@ -1,6 +1,6 @@
-package entity
+package response
 
-type Jwt struct {
+type JwtResponse struct {
 	AccessToken  string `json:"access_token"`
 	RefreshToken string `json:"refresh_token"`
 }

@@ -31,9 +31,10 @@ func main() {
 
 	jwt := service.NewJwtService(conf.Jwt)
 	userRepo := repository.NewUserRepository(dbConnection)
-	userService := service.NewUserService(userRepo, hash, jwt)
+	sessionRepo := repository.NewRefreshSessionRepository(dbConnection)
+	auth := service.NewAuthService(userRepo, sessionRepo, hash, jwt)
 
-	handler := v1.NewHandler(userService)
+	handler := v1.NewHandler(auth)
 	srv := http.NewRestServer(conf.Rest, handler.GetRouter())
 
 	go func() {

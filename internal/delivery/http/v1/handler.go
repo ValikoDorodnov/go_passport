@@ -8,19 +8,19 @@ import (
 )
 
 type Handler struct {
-	userService *service.UserService
+	auth *service.AuthService
 }
 
-func NewHandler(userService *service.UserService) *Handler {
+func NewHandler(auth *service.AuthService) *Handler {
 	return &Handler{
-		userService: userService,
+		auth: auth,
 	}
 }
 
 func (h *Handler) GetRouter() *mux.Router {
 	r := mux.NewRouter()
-	r.HandleFunc("/login-by-email", h.LoginByEmail).Methods(http.MethodPost)
-	r.HandleFunc("/login-by-refresh", h.LoginByRefresh).Methods(http.MethodPost)
+	r.HandleFunc("/sign-in", h.SignIn).Methods(http.MethodPost)
+	r.HandleFunc("/refresh-tokens", h.RefreshTokens).Methods(http.MethodPost)
 
 	return r
 }

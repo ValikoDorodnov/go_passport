@@ -1,12 +1,11 @@
 create table IF NOT EXISTS users
 (
     id            serial
-    constraint users_pk
-    primary key,
-    common_id int not null,
+        constraint users_pk primary key,
+    common_id     int     not null,
     email         varchar not null,
     password_hash text,
-    roles     text
+    roles         text
 );
 
 create unique index IF NOT EXISTS users_email_uindex
@@ -20,6 +19,22 @@ create unique index IF NOT EXISTS users_common_id_uindex
 
 INSERT INTO users (email, password_hash, common_id, roles)
 VALUES ('test@test.ru', MD5('test'), 555, 'test,best')
-    ON CONFLICT (email) DO NOTHING;
+ON CONFLICT (email) DO NOTHING;
 
+create table IF NOT EXISTS refresh_sessions
+(
+    id            serial
+        constraint refresh_sessions_pk
+            primary key,
+    subject       int          not null,
+    refresh_token text         not null,
+    platform      varchar(100) not null,
+    expires_in    bigint,
+    created_at    timestamp default now()
+);
 
+create unique index IF NOT EXISTS refresh_sessions_subject_platform_uindex
+    on refresh_sessions (subject, platform);
+
+create unique index IF NOT EXISTS refresh_sessions_refresh_token_uindex
+    on refresh_sessions (refresh_token);

@@ -1,23 +1,23 @@
 package v1
 
 import (
-	"github.com/ValikoDorodnov/go_passport/internal/delivery/http/v1/dto"
+	"github.com/ValikoDorodnov/go_passport/internal/delivery/http/v1/request"
 	"net/http"
 
 	"github.com/ValikoDorodnov/go_passport/pkg/rest"
 )
 
-func (h *Handler) LoginByEmail(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) RefreshTokens(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
+	var requestDto request.Refresh
 
-	var requestDto dto.LoginByEmailDto
 	err := rest.ParseRequestBody(r.Body, &requestDto)
 	if err != nil {
 		rest.ResponseErrors(w, err)
 		return
 	}
 
-	resp, err := h.userService.LoginByEmail(ctx, &requestDto)
+	resp, err := h.auth.RefreshTokens(ctx, &requestDto)
 	if err != nil {
 		rest.ResponseErrors(w, err)
 		return
