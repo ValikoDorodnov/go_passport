@@ -2,11 +2,13 @@ package service
 
 import (
 	"context"
-	"errors"
 	"github.com/ValikoDorodnov/go_passport/internal/delivery/http/v1/request"
 	"github.com/ValikoDorodnov/go_passport/internal/delivery/http/v1/response"
+	"github.com/ValikoDorodnov/go_passport/internal/entity"
 	"github.com/ValikoDorodnov/go_passport/internal/repository"
 	"github.com/ValikoDorodnov/go_passport/pkg/hasher"
+	"github.com/pkg/errors"
+	"sync"
 	"time"
 )
 
@@ -44,9 +46,7 @@ func (s *AuthService) SignIn(ctx context.Context, r *request.LoginByEmail) (*res
 		return nil, err
 	}
 
-	access := s.jwtService.IssueAccess(user)
-	refresh := s.jwtService.IssueRefresh()
-
+	access, refresh := s.issueTokens(user)
 	err = s.sessionRepo.Create(ctx, user.CommonId, r.Platform, refresh)
 
 	if err != nil {
@@ -71,16 +71,15 @@ func (s AuthService) RefreshTokens(ctx context.Context, r *request.Refresh) (*re
 	}
 
 	if session.ExpiresIn <= time.Now().Unix() {
-		return nil, errors.New("session expired")
+		return nil, errors.Wrap(err, "session expired")
 	}
 
 	user, err := s.userRepo.FindUserById(ctx, session.Subject)
 	if err != nil {
 		return nil, err
 	}
-	access := s.jwtService.IssueAccess(user)
-	refresh := s.jwtService.IssueRefresh()
 
+	access, refresh := s.issueTokens(user)
 	err = s.sessionRepo.Create(ctx, user.CommonId, session.Platform, refresh)
 
 	if err != nil {
@@ -91,4 +90,20 @@ func (s AuthService) RefreshTokens(ctx context.Context, r *request.Refresh) (*re
 		AccessToken:  access.Value,
 		RefreshToken: refresh.Value,
 	}, err
+}
+
+func (s AuthService) issueTokens(user *entity.User) (access, refresh *entity.Token) {
+	var wg sync.WaitGroup
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		access = s.jwtService.IssueAccess(user)
+	}()
+
+	go func() {
+		defer wg.Done()
+		refresh = s.jwtService.IssueRefresh()
+	}()
+	wg.Wait()
+	return
 }
