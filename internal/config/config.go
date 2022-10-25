@@ -8,9 +8,10 @@ import (
 )
 
 type Config struct {
-	Rest RestConfig `mapstructure:",squash"`
-	Db   DbConfig   `mapstructure:",squash"`
-	Jwt  JwtConfig  `mapstructure:",squash"`
+	Rest  RestConfig  `mapstructure:",squash"`
+	Db    DbConfig    `mapstructure:",squash"`
+	Jwt   JwtConfig   `mapstructure:",squash"`
+	Redis RedisConfig `mapstructure:",squash"`
 }
 
 func init() {

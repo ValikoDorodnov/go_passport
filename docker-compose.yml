@@ -24,5 +24,13 @@ services:
     ports:
       - ${DB_DOCKER_PORT}
 
+  redis:
+    image: redis:7.0.2-alpine
+    ports:
+      - ${REDIS_PORT_COMPOSE}:6379
+    volumes:
+      - redis-data:/data
+
 volumes:
+  redis-data: { }
   postgres-passport-vol:

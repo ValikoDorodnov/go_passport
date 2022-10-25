@@ -3,8 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/ValikoDorodnov/go_passport/internal/delivery/http/v1/middleware"
 	"github.com/ValikoDorodnov/go_passport/pkg/hasher"
 	"github.com/ValikoDorodnov/go_passport/pkg/logger"
+	"github.com/ValikoDorodnov/go_passport/pkg/redis_db"
 	"os"
 	"os/signal"
 	"syscall"
@@ -29,12 +31,17 @@ func main() {
 	}
 	defer dbConnection.Close()
 
+	redisConnection := redis_db.Init(conf.Redis)
+	defer redisConnection.Close()
+
 	jwt := service.NewJwtService(conf.Jwt)
 	userRepo := repository.NewUserRepository(dbConnection)
 	sessionRepo := repository.NewRefreshSessionRepository(dbConnection)
-	auth := service.NewAuthService(userRepo, sessionRepo, hash, jwt)
+	accessRepo := repository.NewAccessSession(redisConnection)
+	auth := service.NewAuthService(userRepo, sessionRepo, accessRepo, hash, jwt)
+	authMiddleware := middleware.NewAuthMiddleware(jwt, accessRepo)
 
-	handler := v1.NewHandler(auth)
+	handler := v1.NewHandler(auth, authMiddleware)
 	srv := http.NewRestServer(conf.Rest, handler.GetRouter())
 
 	go func() {

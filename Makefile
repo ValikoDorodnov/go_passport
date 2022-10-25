@@ -9,8 +9,14 @@ docker-up:
 docker-down:
 	docker-compose down -v --remove-orphans
 
+docker-up-deps:
+	docker-compose up -d --build postgres redis
+
 docker-up-db:
 	docker-compose up -d --build postgres
+
+docker-up-redis:
+	docker-compose up -d --build redis
 
 env-init:
 	rm -f .env && cp -n .env.example .env
