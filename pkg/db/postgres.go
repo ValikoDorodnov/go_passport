@@ -8,7 +8,7 @@ import (
 	_ "github.com/lib/pq"
 )
 
-func Init(c config.DbConfig) (*sqlx.DB, error) {
+func InitPostgres(c config.DbConfig) (*sqlx.DB, error) {
 
 	connection := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
 		c.Host, c.Port, c.User, c.Pass, c.Name, c.SllMode,

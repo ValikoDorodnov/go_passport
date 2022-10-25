@@ -1,4 +1,4 @@
-package redis_db
+package db
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	"github.com/go-redis/redis/v9"
 )
 
-func Init(c config.RedisConfig) *redis.Client {
+func InitRedis(c config.RedisConfig) *redis.Client {
 	addr := fmt.Sprintf("%s:%s", c.Host, c.Port)
 	return redis.NewClient(&redis.Options{
 		Addr:     addr,

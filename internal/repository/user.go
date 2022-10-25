@@ -18,7 +18,7 @@ func NewUserRepository(db *sqlx.DB) *UserRepository {
 	}
 }
 
-func (r UserRepository) FindUserByCredentials(ctx context.Context, email, hash string) (*entity.User, error) {
+func (r *UserRepository) FindUserByCredentials(ctx context.Context, email, hash string) (*entity.User, error) {
 	var user entity.User
 
 	query := `SELECT common_id, roles FROM users WHERE email=$1 AND password_hash=$2`
@@ -34,7 +34,7 @@ func (r UserRepository) FindUserByCredentials(ctx context.Context, email, hash s
 	return &user, nil
 }
 
-func (r UserRepository) FindUserById(ctx context.Context, subject string) (*entity.User, error) {
+func (r *UserRepository) FindUserById(ctx context.Context, subject string) (*entity.User, error) {
 	var user entity.User
 
 	query := `SELECT common_id, roles FROM users WHERE common_id=$1`

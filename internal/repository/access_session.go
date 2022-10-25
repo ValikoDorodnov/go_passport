@@ -16,7 +16,7 @@ func NewAccessSession(redis *redis.Client) *AccessSessionRepository {
 	}
 }
 
-func (r *AccessSessionRepository) CheckTokenInBlackList(ctx context.Context, token string) bool {
+func (r *AccessSessionRepository) CheckTokenIsInBlackList(ctx context.Context, token string) bool {
 	_, err := r.redis.Get(ctx, token).Result()
 	if err != nil {
 		return false

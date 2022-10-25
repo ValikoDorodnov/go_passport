@@ -27,7 +27,7 @@ func (r *AuthMiddleware) CheckAuth(next http.Handler) http.Handler {
 		if token != "" {
 			ctx := request.Context()
 
-			revoked := r.accessSession.CheckTokenInBlackList(ctx, token)
+			revoked := r.accessSession.CheckTokenIsInBlackList(ctx, token)
 			if !revoked {
 				parsedToken, err := r.jwt.ParseToken(token)
 				if err == nil {

@@ -6,7 +6,6 @@ import (
 	"github.com/ValikoDorodnov/go_passport/internal/delivery/http/v1/middleware"
 	"github.com/ValikoDorodnov/go_passport/pkg/hasher"
 	"github.com/ValikoDorodnov/go_passport/pkg/logger"
-	"github.com/ValikoDorodnov/go_passport/pkg/redis_db"
 	"os"
 	"os/signal"
 	"syscall"
@@ -25,21 +24,21 @@ func main() {
 	log := logger.NewLogger()
 	hash := hasher.NewHasher()
 
-	dbConnection, err := db.Init(conf.Db)
+	postgres, err := db.InitPostgres(conf.Db)
 	if err != nil {
 		log.Error(fmt.Sprintf("err %v", err))
 	}
-	defer dbConnection.Close()
+	defer postgres.Close()
 
-	redisConnection := redis_db.Init(conf.Redis)
-	defer redisConnection.Close()
+	redis := db.InitRedis(conf.Redis)
+	defer redis.Close()
 
 	jwt := service.NewJwtService(conf.Jwt)
-	userRepo := repository.NewUserRepository(dbConnection)
-	sessionRepo := repository.NewRefreshSessionRepository(dbConnection)
-	accessRepo := repository.NewAccessSession(redisConnection)
-	auth := service.NewAuthService(userRepo, sessionRepo, accessRepo, hash, jwt)
-	authMiddleware := middleware.NewAuthMiddleware(jwt, accessRepo)
+	userRepository := repository.NewUserRepository(postgres)
+	sessionRepository := repository.NewRefreshSessionRepository(postgres)
+	accessRepository := repository.NewAccessSession(redis)
+	auth := service.NewAuthService(userRepository, sessionRepository, accessRepository, hash, jwt)
+	authMiddleware := middleware.NewAuthMiddleware(jwt, accessRepository)
 
 	handler := v1.NewHandler(auth, authMiddleware)
 	srv := http.NewRestServer(conf.Rest, handler.GetRouter())
