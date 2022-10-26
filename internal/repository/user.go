@@ -45,7 +45,7 @@ func (r *UserRepository) FindUserBySubject(ctx context.Context, subject string) 
 	err := r.db.GetContext(ctx, &user, findUserBySubject, subject)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, errors.New("no user")
+			return nil, errors.New("failed to find user")
 		} else {
 			return nil, err
 		}

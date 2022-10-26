@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 
 	"github.com/ValikoDorodnov/go_passport/internal/entity"
@@ -28,7 +29,11 @@ func NewRefreshSessionRepository(db *sqlx.DB) *RefreshSessionRepository {
 func (r *RefreshSessionRepository) FindByRefresh(ctx context.Context, refresh string) (*entity.Session, error) {
 	var session entity.Session
 	err := r.db.GetContext(ctx, &session, findByRefresh, refresh)
-	return &session, err
+	if err == sql.ErrNoRows {
+		return nil, errors.New("no valid session")
+	} else {
+		return &session, err
+	}
 }
 
 func (r *RefreshSessionRepository) Create(ctx context.Context, subject string, platform string, token *entity.Token) error {
