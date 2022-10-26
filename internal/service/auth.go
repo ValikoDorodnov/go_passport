@@ -49,7 +49,10 @@ func (s *AuthService) SignIn(ctx context.Context, r *request.LoginByEmail) (*res
 		return nil, err
 	}
 
-	access, refresh := s.issueTokens(user)
+	access, refresh, err := s.issueTokens(user)
+	if err != nil {
+		return nil, err
+	}
 
 	err = s.sessionRepo.Create(ctx, user.CommonId, r.Platform, refresh)
 	if err != nil {
@@ -84,7 +87,10 @@ func (s *AuthService) RefreshTokens(ctx context.Context, r *request.Refresh) (*r
 		return nil, err
 	}
 
-	access, refresh := s.issueTokens(user)
+	access, refresh, err := s.issueTokens(user)
+	if err != nil {
+		return nil, err
+	}
 
 	err = s.sessionRepo.Create(ctx, user.CommonId, session.Platform, refresh)
 	if err != nil {
@@ -116,12 +122,12 @@ func (s *AuthService) Logout(ctx context.Context, r *request.Logout, token *enti
 	return err
 }
 
-func (s *AuthService) issueTokens(user *entity.User) (access, refresh *entity.Token) {
+func (s *AuthService) issueTokens(user *entity.User) (access, refresh *entity.Token, err error) {
 	var wg sync.WaitGroup
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		access = s.jwtService.IssueAccess(user)
+		access, err = s.jwtService.IssueAccess(user)
 	}()
 
 	go func() {

@@ -22,7 +22,7 @@ func NewJwtService(c config.JwtConfig) *JwtService {
 	return &JwtService{config: c}
 }
 
-func (s *JwtService) IssueAccess(user *entity.User) *entity.Token {
+func (s *JwtService) IssueAccess(user *entity.User) (*entity.Token, error) {
 	token := jwt.New(jwt.SigningMethodHS256)
 	exp := time.Now().Add(time.Second * time.Duration(s.config.AccessTtl)).Unix()
 
@@ -31,10 +31,15 @@ func (s *JwtService) IssueAccess(user *entity.User) *entity.Token {
 	claims["roles"] = user.Roles
 	claims["exp"] = exp
 
-	return &entity.Token{
-		Value: signToken(token, []byte(s.config.SecretKey)),
-		Exp:   exp,
+	signedToken, err := token.SignedString([]byte(s.config.SecretKey))
+	if err != nil {
+		return nil, err
 	}
+
+	return &entity.Token{
+		Value: signedToken,
+		Exp:   exp,
+	}, nil
 }
 
 func (s *JwtService) IssueRefresh() *entity.Token {
@@ -66,12 +71,4 @@ func (s *JwtService) ParseToken(tokenStr string) (*entity.ParsedToken, error) {
 		}, nil
 	}
 	return nil, err
-}
-
-func signToken(token *jwt.Token, secretKey []byte) string {
-	tokenString, err := token.SignedString(secretKey)
-
-	if err != nil {
-	}
-	return tokenString
 }
