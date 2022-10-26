@@ -2,10 +2,17 @@ package repository
 
 import (
 	"context"
-	"database/sql"
 	"errors"
+
 	"github.com/ValikoDorodnov/go_passport/internal/entity"
 	"github.com/jmoiron/sqlx"
+)
+
+const (
+	findByRefresh     = `SELECT subject, platform, expires_in FROM refresh_sessions WHERE refresh_token=$1`
+	create            = `INSERT INTO refresh_sessions (subject, refresh_token, platform, expires_in) VALUES ($1, $2, $3, $4)`
+	deleteByPlatform  = `DELETE FROM refresh_sessions WHERE subject=$1 AND platform=$2`
+	deleteAllSessions = `DELETE FROM refresh_sessions WHERE subject=$1`
 )
 
 type RefreshSessionRepository struct {
@@ -20,22 +27,12 @@ func NewRefreshSessionRepository(db *sqlx.DB) *RefreshSessionRepository {
 
 func (r *RefreshSessionRepository) FindByRefresh(ctx context.Context, refresh string) (*entity.Session, error) {
 	var session entity.Session
-	query := `SELECT subject, platform, expires_in FROM refresh_sessions WHERE refresh_token=$1`
-	err := r.db.GetContext(ctx, &session, query, refresh)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, errors.New("no valid session")
-		} else {
-			return nil, err
-		}
-	}
-
-	return &session, nil
+	err := r.db.GetContext(ctx, &session, findByRefresh, refresh)
+	return &session, err
 }
 
 func (r *RefreshSessionRepository) Create(ctx context.Context, subject string, platform string, token *entity.Token) error {
-	query := `INSERT INTO refresh_sessions (subject, refresh_token, platform, expires_in) VALUES ($1, $2, $3, $4)`
-	res, err := r.db.ExecContext(ctx, query, subject, token.Value, platform, token.Exp)
+	res, err := r.db.ExecContext(ctx, create, subject, token.Value, platform, token.Exp)
 	if err != nil {
 		return err
 	}
@@ -48,15 +45,13 @@ func (r *RefreshSessionRepository) Create(ctx context.Context, subject string, p
 }
 
 func (r *RefreshSessionRepository) DeleteByPlatform(ctx context.Context, subject string, platform string) error {
-	query := `DELETE FROM refresh_sessions WHERE subject=$1 AND platform=$2`
-	_, err := r.db.ExecContext(ctx, query, subject, platform)
+	_, err := r.db.ExecContext(ctx, deleteByPlatform, subject, platform)
 
 	return err
 }
 
 func (r *RefreshSessionRepository) DeleteAllSessions(ctx context.Context, subject string) error {
-	query := `DELETE FROM refresh_sessions WHERE subject=$1`
-	_, err := r.db.ExecContext(ctx, query, subject)
+	_, err := r.db.ExecContext(ctx, deleteAllSessions, subject)
 
 	return err
 }

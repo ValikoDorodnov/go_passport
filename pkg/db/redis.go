@@ -2,6 +2,7 @@ package db
 
 import (
 	"fmt"
+
 	"github.com/ValikoDorodnov/go_passport/internal/config"
 	"github.com/go-redis/redis/v9"
 )

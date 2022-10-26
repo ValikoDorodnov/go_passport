@@ -1,5 +1,7 @@
 package request
 
 type LoginByEmail struct {
-	Email, Pass, Platform string
+	Email    string `json:"email"`
+	Pass     string `json:"pass"`
+	Platform string `json:"platform"`
 }

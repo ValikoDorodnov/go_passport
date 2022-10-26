@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+
 	"github.com/ValikoDorodnov/go_passport/internal/entity"
 	"github.com/go-redis/redis/v9"
 )
@@ -24,9 +25,6 @@ func (r *AccessSessionRepository) CheckTokenIsInBlackList(ctx context.Context, t
 	return true
 }
 
-func (r *AccessSessionRepository) AddTokenToBlackList(ctx context.Context, token *entity.ParsedToken) {
-	err := r.redis.Set(ctx, token.Jwt, token.Subject, token.ExpTtl).Err()
-	if err != nil {
-		panic(err)
-	}
+func (r *AccessSessionRepository) AddTokenToBlackList(ctx context.Context, token *entity.ParsedToken) error {
+	return r.redis.Set(ctx, token.Jwt, token.Subject, token.ExpTtl).Err()
 }

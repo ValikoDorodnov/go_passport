@@ -1,15 +1,16 @@
 package middleware
 
 import (
+	"net/http"
+
 	"github.com/ValikoDorodnov/go_passport/internal/entity"
 	"github.com/ValikoDorodnov/go_passport/internal/repository"
 	"github.com/ValikoDorodnov/go_passport/internal/service"
-	"net/http"
 )
 
 type AuthMiddleware struct {
-	jwt           *service.JwtService
 	ParsedToken   *entity.ParsedToken
+	jwt           *service.JwtService
 	accessSession *repository.AccessSessionRepository
 }
 

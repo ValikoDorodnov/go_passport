@@ -2,11 +2,12 @@ package service
 
 import (
 	"errors"
+	"time"
+
 	"github.com/ValikoDorodnov/go_passport/internal/config"
 	"github.com/ValikoDorodnov/go_passport/internal/entity"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/google/uuid"
-	"time"
 )
 
 type MyClaims struct {
@@ -37,12 +38,9 @@ func (s *JwtService) IssueAccess(user *entity.User) *entity.Token {
 }
 
 func (s *JwtService) IssueRefresh() *entity.Token {
-	exp := time.Now().Add(time.Second * time.Duration(s.config.RefreshTtl)).Unix()
-	token := uuid.New()
-
 	return &entity.Token{
-		Value: token.String(),
-		Exp:   exp,
+		Value: uuid.New().String(),
+		Exp:   time.Now().Add(time.Second * time.Duration(s.config.RefreshTtl)).Unix(),
 	}
 }
 

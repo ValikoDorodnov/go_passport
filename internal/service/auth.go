@@ -2,14 +2,15 @@ package service
 
 import (
 	"context"
+	"sync"
+	"time"
+
 	"github.com/ValikoDorodnov/go_passport/internal/delivery/http/v1/request"
 	"github.com/ValikoDorodnov/go_passport/internal/delivery/http/v1/response"
 	"github.com/ValikoDorodnov/go_passport/internal/entity"
 	"github.com/ValikoDorodnov/go_passport/internal/repository"
 	"github.com/ValikoDorodnov/go_passport/pkg/hasher"
 	"github.com/pkg/errors"
-	"sync"
-	"time"
 )
 
 type AuthService struct {
@@ -49,8 +50,8 @@ func (s *AuthService) SignIn(ctx context.Context, r *request.LoginByEmail) (*res
 	}
 
 	access, refresh := s.issueTokens(user)
-	err = s.sessionRepo.Create(ctx, user.CommonId, r.Platform, refresh)
 
+	err = s.sessionRepo.Create(ctx, user.CommonId, r.Platform, refresh)
 	if err != nil {
 		return nil, err
 	}
@@ -58,32 +59,34 @@ func (s *AuthService) SignIn(ctx context.Context, r *request.LoginByEmail) (*res
 	return &response.JwtResponse{
 		AccessToken:  access.Value,
 		RefreshToken: refresh.Value,
-	}, err
+	}, nil
 }
 
 func (s *AuthService) RefreshTokens(ctx context.Context, r *request.Refresh) (*response.JwtResponse, error) {
 	session, err := s.sessionRepo.FindByRefresh(ctx, r.RefreshToken)
-
 	if err != nil {
 		return nil, err
 	}
+	if session == nil {
+		return nil, errors.New("no valid session")
+	}
+
 	err = s.sessionRepo.DeleteByPlatform(ctx, session.Subject, session.Platform)
 	if err != nil {
 		return nil, err
 	}
-
 	if session.ExpiresIn <= time.Now().Unix() {
-		return nil, errors.Wrap(err, "session expired")
+		return nil, errors.New("session expired")
 	}
 
-	user, err := s.userRepo.FindUserById(ctx, session.Subject)
+	user, err := s.userRepo.FindUserBySubject(ctx, session.Subject)
 	if err != nil {
 		return nil, err
 	}
 
 	access, refresh := s.issueTokens(user)
-	err = s.sessionRepo.Create(ctx, user.CommonId, session.Platform, refresh)
 
+	err = s.sessionRepo.Create(ctx, user.CommonId, session.Platform, refresh)
 	if err != nil {
 		return nil, err
 	}
@@ -95,18 +98,21 @@ func (s *AuthService) RefreshTokens(ctx context.Context, r *request.Refresh) (*r
 }
 
 func (s *AuthService) Logout(ctx context.Context, r *request.Logout, token *entity.ParsedToken) error {
-	err := errors.New("Logout failed")
-	if token != nil {
-		if r.Platform != "" {
-			err = s.sessionRepo.DeleteByPlatform(ctx, token.Subject, r.Platform)
-		} else {
-			err = s.sessionRepo.DeleteAllSessions(ctx, token.Subject)
-		}
-
-		if err == nil {
-			s.accessRepo.AddTokenToBlackList(ctx, token)
-		}
+	if token == nil {
+		return errors.New("access expired")
 	}
+
+	var err error
+	if r.Platform != "" {
+		err = s.sessionRepo.DeleteByPlatform(ctx, token.Subject, r.Platform)
+	} else {
+		err = s.sessionRepo.DeleteAllSessions(ctx, token.Subject)
+	}
+
+	if err == nil {
+		err = s.accessRepo.AddTokenToBlackList(ctx, token)
+	}
+
 	return err
 }
 

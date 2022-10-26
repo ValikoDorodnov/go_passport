@@ -1,8 +1,9 @@
 package v1
 
 import (
-	"github.com/ValikoDorodnov/go_passport/internal/delivery/http/v1/request"
 	"net/http"
+
+	"github.com/ValikoDorodnov/go_passport/internal/delivery/http/v1/request"
 
 	"github.com/ValikoDorodnov/go_passport/pkg/rest"
 )
@@ -22,5 +23,7 @@ func (h *Handler) RefreshTokens(w http.ResponseWriter, r *http.Request) {
 		rest.ResponseErrors(w, err)
 		return
 	}
+
 	rest.ResponseOk(w, resp)
+	return
 }

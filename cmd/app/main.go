@@ -3,12 +3,13 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/ValikoDorodnov/go_passport/internal/delivery/http/v1/middleware"
-	"github.com/ValikoDorodnov/go_passport/pkg/hasher"
-	"github.com/ValikoDorodnov/go_passport/pkg/logger"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/ValikoDorodnov/go_passport/internal/delivery/http/v1/middleware"
+	"github.com/ValikoDorodnov/go_passport/pkg/hasher"
+	"github.com/ValikoDorodnov/go_passport/pkg/logger"
 
 	"github.com/ValikoDorodnov/go_passport/internal/repository"
 	"github.com/ValikoDorodnov/go_passport/pkg/db"

@@ -1,8 +1,9 @@
 package v1
 
 import (
-	"github.com/ValikoDorodnov/go_passport/internal/delivery/http/v1/middleware"
 	"net/http"
+
+	"github.com/ValikoDorodnov/go_passport/internal/delivery/http/v1/middleware"
 
 	"github.com/ValikoDorodnov/go_passport/internal/service"
 	"github.com/gorilla/mux"
