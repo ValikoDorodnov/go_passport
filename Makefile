@@ -24,5 +24,5 @@ env-init:
 print-location:
 	@printf "\n   \e[30;42m %s \033[0m\n\n" 'Navigate your browser to ⇒ http://localhost:${REST_ADDR}';
 
-run-test:
-	go test ./...
+test:
+	go test -v ./...

@@ -14,13 +14,10 @@ type Config struct {
 	Redis RedisConfig `mapstructure:",squash"`
 }
 
-func init() {
+func InitConfig() *Config {
 	if err := godotenv.Load(); err != nil {
 		panic("No .env file found")
 	}
-}
-
-func InitConfig() *Config {
 	conf := &Config{}
 	err := config.Unmarshal(conf)
 	if err != nil {
