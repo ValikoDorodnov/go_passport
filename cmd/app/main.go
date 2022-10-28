@@ -26,7 +26,7 @@ func main() {
 	redis := db.InitRedis(conf.Redis)
 	defer redis.Close()
 
-	srv := app.InitSrv(conf, log, postgres, redis).Configure()
+	srv := app.Configure(conf, postgres, redis)
 
 	go func() {
 		fmt.Printf("rest server started at port %s", conf.Rest.Port)
