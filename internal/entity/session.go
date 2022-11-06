@@ -1,7 +1,7 @@
 package entity
 
 type Session struct {
-	Subject   string `db:"subject"`
-	Platform  string `db:"platform"`
-	ExpiresIn int64  `db:"expires_in"`
+	Subject     string `db:"subject"`
+	Fingerprint string `db:"fingerprint"`
+	ExpiresIn   int64  `db:"expires_in"`
 }

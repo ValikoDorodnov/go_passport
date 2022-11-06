@@ -44,7 +44,7 @@ func (s *AuthService) SignIn(ctx context.Context, r *request.LoginByEmail) (*res
 		return nil, err
 	}
 
-	err = s.sessionRepo.DeleteByPlatform(ctx, user.CommonId, r.Platform)
+	err = s.sessionRepo.DeleteByFingerprint(ctx, user.CommonId, r.Fingerprint)
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +54,7 @@ func (s *AuthService) SignIn(ctx context.Context, r *request.LoginByEmail) (*res
 		return nil, err
 	}
 
-	err = s.sessionRepo.Create(ctx, user.CommonId, r.Platform, refresh)
+	err = s.sessionRepo.Create(ctx, user.CommonId, r.Fingerprint, refresh)
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +74,7 @@ func (s *AuthService) RefreshTokens(ctx context.Context, r *request.Refresh) (*r
 		return nil, errors.New("no valid session")
 	}
 
-	err = s.sessionRepo.DeleteByPlatform(ctx, session.Subject, session.Platform)
+	err = s.sessionRepo.DeleteByFingerprint(ctx, session.Subject, session.Fingerprint)
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +92,7 @@ func (s *AuthService) RefreshTokens(ctx context.Context, r *request.Refresh) (*r
 		return nil, err
 	}
 
-	err = s.sessionRepo.Create(ctx, user.CommonId, session.Platform, refresh)
+	err = s.sessionRepo.Create(ctx, user.CommonId, session.Fingerprint, refresh)
 	if err != nil {
 		return nil, err
 	}
@@ -109,9 +109,15 @@ func (s *AuthService) Logout(ctx context.Context, r *request.Logout, token *enti
 	}
 
 	var err error
-	if r.Platform != "" {
-		err = s.sessionRepo.DeleteByPlatform(ctx, token.Subject, r.Platform)
-	} else {
+	if r.Fingerprint != "" {
+		err = s.sessionRepo.FindByFingerprint(ctx, token.Subject, r.Fingerprint)
+		if err != nil {
+			return err
+		}
+		err = s.sessionRepo.DeleteByFingerprint(ctx, token.Subject, r.Fingerprint)
+	}
+
+	if r.Fingerprint == "" {
 		err = s.sessionRepo.DeleteAllSessions(ctx, token.Subject)
 	}
 

@@ -28,13 +28,13 @@ create table IF NOT EXISTS refresh_sessions
             primary key,
     subject       int          not null,
     refresh_token text         not null,
-    platform      varchar(100) not null,
+    fingerprint   varchar(200) not null,
     expires_in    bigint,
     created_at    timestamp default now()
 );
 
-create unique index IF NOT EXISTS refresh_sessions_subject_platform_uindex
-    on refresh_sessions (subject, platform);
+create unique index IF NOT EXISTS refresh_sessions_subject_fingerprint_uindex
+    on refresh_sessions (subject, fingerprint);
 
 create unique index IF NOT EXISTS refresh_sessions_refresh_token_uindex
     on refresh_sessions (refresh_token);
