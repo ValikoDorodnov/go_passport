@@ -7,7 +7,6 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/ValikoDorodnov/go_passport/pkg/db"
 	"github.com/ValikoDorodnov/go_passport/pkg/logger"
 
 	"github.com/ValikoDorodnov/go_passport/internal/config"
@@ -17,20 +16,22 @@ import (
 func main() {
 	conf := config.InitConfig()
 	log := logger.NewLogger()
-	postgres, err := db.InitPostgres(conf.Db)
+
+	application, err := app.NewApp(conf)
 	if err != nil {
-		log.Error(fmt.Sprintf("err %v", err))
+		log.Error(fmt.Sprintf("error occured while initializating app: %s", err.Error()))
+		return
 	}
-	defer postgres.Close()
 
-	redis := db.InitRedis(conf.Redis)
-	defer redis.Close()
-
-	srv := app.Configure(conf, postgres, redis)
+	server, err := application.BuildServer()
+	if err != nil {
+		log.Error(fmt.Sprintf("error occured while configuring app: %s", err.Error()))
+		return
+	}
 
 	go func() {
 		fmt.Printf("rest server started at port %s", conf.Rest.Port)
-		if err := srv.Run(); err != nil {
+		if err := server.Run(); err != nil {
 			log.Error(fmt.Sprintf("error occured while running http server: %s", err.Error()))
 			return
 		}
@@ -40,7 +41,10 @@ func main() {
 	signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
 	<-quit
 
-	if err := srv.Shutdown(context.Background()); err != nil {
+	if err := application.Shutdown(); err != nil {
+		log.Error(fmt.Sprintf("error occured on databases shutting down: %s", err.Error()))
+	}
+	if err := server.Shutdown(context.Background()); err != nil {
 		log.Error(fmt.Sprintf("error occured on server shutting down: %s", err.Error()))
 	}
 }
