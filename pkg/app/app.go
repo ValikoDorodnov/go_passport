@@ -1,6 +1,9 @@
 package app
 
 import (
+	"context"
+	"fmt"
+
 	"github.com/ValikoDorodnov/go_passport/internal/config"
 	"github.com/ValikoDorodnov/go_passport/internal/delivery/http"
 	v1 "github.com/ValikoDorodnov/go_passport/internal/delivery/http/v1"
@@ -9,12 +12,13 @@ import (
 	"github.com/ValikoDorodnov/go_passport/internal/service"
 	"github.com/ValikoDorodnov/go_passport/pkg/db"
 	"github.com/ValikoDorodnov/go_passport/pkg/hasher"
+	"github.com/ValikoDorodnov/go_passport/pkg/logger"
 	"github.com/go-redis/redis/v9"
 	"github.com/jmoiron/sqlx"
 )
 
 type App struct {
-	conf     *config.Config
+	Server   *http.Server
 	postgres *sqlx.DB
 	redis    *redis.Client
 }
@@ -25,30 +29,36 @@ func NewApp(conf *config.Config) (*App, error) {
 		return nil, err
 	}
 	r := db.InitRedis(conf.Redis)
-	return &App{
-		conf:     conf,
-		postgres: p,
-		redis:    r,
-	}, nil
-}
 
-func (r App) BuildServer() (*http.Server, error) {
 	hash := hasher.NewHasher()
-	jwt := service.NewJwtService(r.conf.Jwt)
-	userRepository := repository.NewUserRepository(r.postgres)
-	sessionRepository := repository.NewRefreshSessionRepository(r.postgres)
-	accessRepository := repository.NewAccessSession(r.redis)
+	jwt := service.NewJwtService(conf.Jwt)
+	userRepository := repository.NewUserRepository(p)
+	sessionRepository := repository.NewRefreshSessionRepository(p)
+	accessRepository := repository.NewAccessSession(r)
 	auth := service.NewAuthService(userRepository, sessionRepository, accessRepository, hash, jwt)
 	authMiddleware := middleware.NewAuthMiddleware(jwt, accessRepository)
 
 	handler := v1.NewHandler(auth, authMiddleware)
-	return http.NewRestServer(r.conf.Rest, handler.GetRouter()), nil
+	server := http.NewRestServer(conf.Rest, handler.GetRouter())
+
+	return &App{
+		postgres: p,
+		redis:    r,
+		Server:   server,
+	}, nil
 }
 
-func (r App) Shutdown() error {
+func (r App) Shutdown(ctx context.Context, log *logger.Logger) {
 	err := r.redis.Close()
 	if err != nil {
-		return err
+		log.Error(fmt.Sprintf("error occured on redis shutting down: %s", err.Error()))
 	}
-	return r.postgres.Close()
+	err = r.postgres.Close()
+	if err != nil {
+		log.Error(fmt.Sprintf("error occured on postgres shutting down: %s", err.Error()))
+	}
+	err = r.Server.Shutdown(ctx)
+	if err != nil {
+		log.Error(fmt.Sprintf("error occured on server shutting down: %s", err.Error()))
+	}
 }
