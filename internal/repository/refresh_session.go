@@ -2,71 +2,95 @@ package repository
 
 import (
 	"context"
-	"database/sql"
-	"errors"
 
 	"github.com/ValikoDorodnov/go_passport/internal/entity"
-	"github.com/jmoiron/sqlx"
-)
-
-const (
-	findByRefresh       = `SELECT subject, fingerprint, expires_in FROM refresh_sessions WHERE refresh_token=$1`
-	findByFingerprint   = `SELECT 1 FROM refresh_sessions WHERE subject=$1 and fingerprint=$2`
-	create              = `INSERT INTO refresh_sessions (subject, refresh_token, fingerprint, expires_in) VALUES ($1, $2, $3, $4)`
-	deleteByFingerprint = `DELETE FROM refresh_sessions WHERE subject=$1 AND fingerprint=$2`
-	deleteAllSessions   = `DELETE FROM refresh_sessions WHERE subject=$1`
+	"github.com/go-redis/redis/v9"
 )
 
 type RefreshSessionRepository struct {
-	db *sqlx.DB
+	redis *redis.Client
 }
 
-func NewRefreshSessionRepository(db *sqlx.DB) *RefreshSessionRepository {
+func NewRefreshSessionRepository(redis *redis.Client) *RefreshSessionRepository {
 	return &RefreshSessionRepository{
-		db: db,
+		redis: redis,
 	}
 }
 
-func (r *RefreshSessionRepository) FindByRefresh(ctx context.Context, refresh string) (*entity.Session, error) {
+func (r *RefreshSessionRepository) CreateSession(ctx context.Context, subject, fingerprint string, token *entity.Token) error {
+	err := r.redis.HSet(ctx, token.Value, "subject", subject, "fingerprint", fingerprint).Err()
+	if err != nil {
+		return err
+	}
+
+	err = r.addSessionTtl(ctx, token)
+	if err != nil {
+		return err
+	}
+
+	return r.createSessionPointer(ctx, subject, fingerprint, token)
+}
+
+func (r *RefreshSessionRepository) addSessionTtl(ctx context.Context, token *entity.Token) error {
+	return r.redis.Expire(ctx, token.Value, token.Exp).Err()
+}
+
+func (r *RefreshSessionRepository) createSessionPointer(ctx context.Context, subject, fingerprint string, token *entity.Token) error {
+	key := r.key(subject, fingerprint)
+	return r.redis.Set(ctx, key, token.Value, token.Exp).Err()
+}
+
+func (r *RefreshSessionRepository) FindSession(ctx context.Context, token string) (*entity.Session, error) {
 	var session entity.Session
-	err := r.db.GetContext(ctx, &session, findByRefresh, refresh)
-	if err == sql.ErrNoRows {
-		return nil, errors.New("no valid session")
+	err := r.redis.HGetAll(ctx, token).Scan(&session)
+	if err != nil {
+		return nil, err
 	} else {
 		return &session, err
 	}
 }
 
-func (r *RefreshSessionRepository) FindByFingerprint(ctx context.Context, subject, fingerprint string) error {
-	var res bool
-	err := r.db.GetContext(ctx, &res, findByFingerprint, subject, fingerprint)
-	if err == sql.ErrNoRows {
-		return errors.New("no valid session")
+func (r *RefreshSessionRepository) DeleteSessionByPointer(ctx context.Context, subject, fingerprint string) error {
+	var err error
+	pointer, _ := r.findPointer(ctx, subject, fingerprint)
+	if pointer != "" {
+		err = r.redis.Del(ctx, pointer).Err()
+		if err != nil {
+			return err
+		}
+		err = r.deleteSessionPointer(ctx, subject, fingerprint)
 	}
-	return nil
+
+	return err
 }
 
-func (r *RefreshSessionRepository) Create(ctx context.Context, subject string, fingerprint string, token *entity.Token) error {
-	res, err := r.db.ExecContext(ctx, create, subject, token.Value, fingerprint, token.Exp)
+func (r *RefreshSessionRepository) DeleteSessions(ctx context.Context, subject string) error {
+	keys, _, err := r.redis.Scan(ctx, 0, subject+"*", 0).Result()
 	if err != nil {
 		return err
 	}
-	rows, err := res.RowsAffected()
-	if int(rows) < 1 {
-		return errors.New("failed to create session")
+
+	for _, key := range keys {
+		session, err := r.redis.Get(ctx, key).Result()
+		if err == nil {
+			err = r.redis.Del(ctx, session).Err()
+			err = r.redis.Del(ctx, key).Err()
+		}
 	}
 
 	return err
 }
 
-func (r *RefreshSessionRepository) DeleteByFingerprint(ctx context.Context, subject string, fingerprint string) error {
-	_, err := r.db.ExecContext(ctx, deleteByFingerprint, subject, fingerprint)
-
-	return err
+func (r *RefreshSessionRepository) deleteSessionPointer(ctx context.Context, subject, fingerprint string) error {
+	key := r.key(subject, fingerprint)
+	return r.redis.Del(ctx, key).Err()
 }
 
-func (r *RefreshSessionRepository) DeleteAllSessions(ctx context.Context, subject string) error {
-	_, err := r.db.ExecContext(ctx, deleteAllSessions, subject)
+func (r *RefreshSessionRepository) findPointer(ctx context.Context, subject, fingerprint string) (string, error) {
+	key := r.key(subject, fingerprint)
+	return r.redis.Get(ctx, key).Result()
+}
 
-	return err
+func (r *RefreshSessionRepository) key(subject, fingerprint string) string {
+	return subject + "_" + fingerprint
 }

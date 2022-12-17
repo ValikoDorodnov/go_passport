@@ -33,7 +33,7 @@ func NewApp(conf *config.Config) (*App, error) {
 	hash := hasher.NewHasher()
 	jwt := service.NewJwtService(conf.Jwt)
 	userRepository := repository.NewUserRepository(p)
-	sessionRepository := repository.NewRefreshSessionRepository(p)
+	sessionRepository := repository.NewRefreshSessionRepository(r)
 	accessRepository := repository.NewAccessSession(r)
 	auth := service.NewAuthService(userRepository, sessionRepository, accessRepository, hash, jwt)
 	authMiddleware := middleware.NewAuthMiddleware(jwt, accessRepository)

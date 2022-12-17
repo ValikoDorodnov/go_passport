@@ -1,6 +1,8 @@
 package entity
 
+import "time"
+
 type Token struct {
 	Value string
-	Exp   int64
+	Exp   time.Duration
 }
