@@ -9,15 +9,15 @@ import (
 )
 
 type AuthMiddleware struct {
-	ParsedToken   *entity.ParsedToken
-	jwt           *service.JwtService
-	accessSession *repository.AccessSessionRepository
+	ParsedToken *entity.ParsedToken
+	jwt         *service.JwtService
+	sessionRepo *repository.SessionRepository
 }
 
-func NewAuthMiddleware(jwt *service.JwtService, accessSession *repository.AccessSessionRepository) *AuthMiddleware {
+func NewAuthMiddleware(jwt *service.JwtService, sessionRepo *repository.SessionRepository) *AuthMiddleware {
 	return &AuthMiddleware{
-		jwt:           jwt,
-		accessSession: accessSession,
+		jwt:         jwt,
+		sessionRepo: sessionRepo,
 	}
 }
 
@@ -28,7 +28,7 @@ func (r *AuthMiddleware) CheckAuth(next http.Handler) http.Handler {
 		if token != "" {
 			ctx := request.Context()
 
-			revoked := r.accessSession.CheckTokenIsInBlackList(ctx, token)
+			revoked := r.sessionRepo.CheckTokenIsInBlackList(ctx, token)
 			if !revoked {
 				parsedToken, err := r.jwt.ParseToken(token)
 				if err == nil {

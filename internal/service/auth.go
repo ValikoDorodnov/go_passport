@@ -14,23 +14,20 @@ import (
 
 type AuthService struct {
 	userRepo    *repository.UserRepository
-	sessionRepo *repository.RefreshSessionRepository
-	accessRepo  *repository.AccessSessionRepository
+	sessionRepo *repository.SessionRepository
 	hasher      *hasher.Hasher
 	jwtService  *JwtService
 }
 
 func NewAuthService(
 	userRepo *repository.UserRepository,
-	sessionRepo *repository.RefreshSessionRepository,
-	accessRepo *repository.AccessSessionRepository,
+	sessionRepo *repository.SessionRepository,
 	hasher *hasher.Hasher,
 	jwtService *JwtService,
 ) *AuthService {
 	return &AuthService{
 		userRepo:    userRepo,
 		sessionRepo: sessionRepo,
-		accessRepo:  accessRepo,
 		hasher:      hasher,
 		jwtService:  jwtService,
 	}
@@ -43,7 +40,7 @@ func (s *AuthService) SignIn(ctx context.Context, r *request.LoginByEmail) (*res
 		return nil, err
 	}
 
-	err = s.sessionRepo.DeleteSessionByPointer(ctx, user.CommonId, r.Fingerprint)
+	err = s.sessionRepo.DeleteByPointer(ctx, user.CommonId, r.Fingerprint)
 	if err != nil {
 		return nil, err
 	}
@@ -53,7 +50,7 @@ func (s *AuthService) SignIn(ctx context.Context, r *request.LoginByEmail) (*res
 		return nil, err
 	}
 
-	err = s.sessionRepo.CreateSession(ctx, user.CommonId, r.Fingerprint, refresh)
+	err = s.sessionRepo.Create(ctx, user.CommonId, r.Fingerprint, refresh)
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +62,7 @@ func (s *AuthService) SignIn(ctx context.Context, r *request.LoginByEmail) (*res
 }
 
 func (s *AuthService) RefreshTokens(ctx context.Context, r *request.Refresh) (*response.JwtResponse, error) {
-	session, err := s.sessionRepo.FindSession(ctx, r.RefreshToken)
+	session, err := s.sessionRepo.Find(ctx, r.RefreshToken)
 	if err != nil {
 		return nil, err
 	}
@@ -73,7 +70,7 @@ func (s *AuthService) RefreshTokens(ctx context.Context, r *request.Refresh) (*r
 		return nil, errors.New("no valid session")
 	}
 
-	err = s.sessionRepo.DeleteSessionByPointer(ctx, session.Subject, session.Fingerprint)
+	err = s.sessionRepo.DeleteByPointer(ctx, session.Subject, session.Fingerprint)
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +85,7 @@ func (s *AuthService) RefreshTokens(ctx context.Context, r *request.Refresh) (*r
 		return nil, err
 	}
 
-	err = s.sessionRepo.CreateSession(ctx, user.CommonId, session.Fingerprint, refresh)
+	err = s.sessionRepo.Create(ctx, user.CommonId, session.Fingerprint, refresh)
 	if err != nil {
 		return nil, err
 	}
@@ -106,16 +103,16 @@ func (s *AuthService) Logout(ctx context.Context, r *request.Logout, token *enti
 
 	var err error
 	if r.Fingerprint != "" {
-		err = s.sessionRepo.DeleteSessionByPointer(ctx, token.Subject, r.Fingerprint)
+		err = s.sessionRepo.DeleteByPointer(ctx, token.Subject, r.Fingerprint)
 		if err != nil {
 			return err
 		}
 	} else {
-		s.sessionRepo.DeleteSessions(ctx, token.Subject)
+		s.sessionRepo.DeleteAll(ctx, token.Subject)
 	}
 
 	if err == nil {
-		err = s.accessRepo.AddTokenToBlackList(ctx, token)
+		err = s.sessionRepo.AddTokenToBlackList(ctx, token)
 	}
 
 	return err
