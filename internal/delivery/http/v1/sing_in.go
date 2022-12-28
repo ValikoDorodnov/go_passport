@@ -14,13 +14,18 @@ func (h *Handler) SignIn(w http.ResponseWriter, r *http.Request) {
 
 	err := rest.ParseRequestBody(r.Body, &requestDto)
 	if err != nil {
-		rest.ResponseErrors(w, err)
+		rest.ResponseError(w, err)
+		return
+	}
+
+	if isOk, errs := h.validator.Validate(requestDto); !isOk {
+		rest.ResponseErrors(w, errs)
 		return
 	}
 
 	resp, err := h.auth.SignIn(ctx, &requestDto)
 	if err != nil {
-		rest.ResponseErrors(w, err)
+		rest.ResponseError(w, err)
 		return
 	}
 

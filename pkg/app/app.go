@@ -13,6 +13,7 @@ import (
 	"github.com/ValikoDorodnov/go_passport/pkg/db"
 	"github.com/ValikoDorodnov/go_passport/pkg/hasher"
 	"github.com/ValikoDorodnov/go_passport/pkg/logger"
+	v "github.com/ValikoDorodnov/go_passport/pkg/validator"
 	"github.com/go-redis/redis/v9"
 	"github.com/jmoiron/sqlx"
 )
@@ -36,8 +37,9 @@ func NewApp(conf *config.Config) (*App, error) {
 	sessionRepository := repository.NewSessionRepository(r)
 	auth := service.NewAuthService(userRepository, sessionRepository, hash, jwt)
 	authMiddleware := middleware.NewAuthMiddleware(jwt, sessionRepository)
+	validator := v.NewValidator()
 
-	handler := v1.NewHandler(auth, authMiddleware)
+	handler := v1.NewHandler(auth, authMiddleware, validator)
 	server := http.NewRestServer(conf.Rest, handler.GetRouter())
 
 	return &App{

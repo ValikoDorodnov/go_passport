@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/ValikoDorodnov/go_passport/internal/delivery/http/v1/middleware"
+	"github.com/ValikoDorodnov/go_passport/pkg/validator"
 
 	"github.com/ValikoDorodnov/go_passport/internal/service"
 	"github.com/gorilla/mux"
@@ -12,12 +13,18 @@ import (
 type Handler struct {
 	auth       *service.AuthService
 	middleware *middleware.AuthMiddleware
+	validator  *validator.Validator
 }
 
-func NewHandler(auth *service.AuthService, middleware *middleware.AuthMiddleware) *Handler {
+func NewHandler(
+	auth *service.AuthService,
+	middleware *middleware.AuthMiddleware,
+	validator *validator.Validator,
+) *Handler {
 	return &Handler{
 		auth:       auth,
 		middleware: middleware,
+		validator:  validator,
 	}
 }
 

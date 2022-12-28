@@ -14,13 +14,13 @@ func (h *Handler) Logout(w http.ResponseWriter, r *http.Request) {
 
 	err := rest.ParseRequestBody(r.Body, &requestDto)
 	if err != nil {
-		rest.ResponseErrors(w, err)
+		rest.ResponseError(w, err)
 		return
 	}
 
 	err = h.auth.Logout(ctx, &requestDto, h.middleware.ParsedToken)
 	if err != nil {
-		rest.ResponseErrors(w, err)
+		rest.ResponseError(w, err)
 		return
 	}
 
